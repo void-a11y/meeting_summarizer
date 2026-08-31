@@ -39,19 +39,33 @@ wraps, just self-hosted, so it satisfies the same requirement at zero cost.
 
 ```
 meeting-summarizer/
+│
 ├── backend/
-│   ├── main.py          # FastAPI app, routes, background job orchestration
-│   ├── asr.py            # ASR provider integration
-│   ├── summarizer.py      # LLM prompt + summary/action-item extraction
-│   ├── models.py         # SQLAlchemy Meeting table
-│   ├── schemas.py        # Pydantic response models
-│   ├── database.py       # DB session setup
+│   ├── main.py              # FastAPI app, routes, background job orchestration
+│   ├── asr.py               # ASR provider integration
+│   ├── summarizer.py        # LLM prompt + summary/action-item extraction
+│   ├── models.py            # SQLAlchemy Meeting table
+│   ├── schemas.py           # Pydantic response models
+│   ├── database.py          # DB session setup
 │   ├── requirements.txt
 │   └── .env.example
+│
 ├── frontend/
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
+│
+├── examples/
+│   ├── 01-minimal-recording/
+│   │   ├── output.json
+│   │   └── transcript.txt
+│   │
+│   ├── 02-product-design-kickoff/
+│   │   ├── output.json
+│   │   └── transcript.txt
+│   │
+│   └── README.md
+│
 └── README.md
 ```
 
@@ -103,22 +117,7 @@ curl -X POST http://localhost:8000/api/meetings \
 curl http://localhost:8000/api/meetings/1
 ```
 
-Response once processing finishes:
 
-```json
-{
-  "id": 1,
-  "filename": "standup.mp3",
-  "status": "done",
-  "transcript": "...",
-  "summary": "The team agreed to ship the auth refactor by Friday...",
-  "decisions": ["Ship the auth refactor by Friday", "Use Postgres over DynamoDB"],
-  "action_items": [
-    {"task": "Write migration script", "owner": "Priya", "due_date": "Thursday"},
-    {"task": "Update API docs", "owner": null, "due_date": null}
-  ]
-}
-```
 
 ## LLM prompt
 
@@ -133,21 +132,3 @@ The summarization prompt (see `summarizer.py`) instructs the model to:
 This keeps grading/eval focused on transcript fidelity rather than the model
 "cleaning up" or embellishing what was said.
 
-## Known limitations / next steps
-
-- Processing runs in FastAPI `BackgroundTasks`, which is fine for a demo but
-  not durable — a crash mid-job loses that job. A real deployment would use
-  a task queue (Celery/RQ) or a managed job runner.
-- No auth — anyone with the URL can upload/view meetings. Fine for a local
-  demo, not for production.
-- Large files: OpenAI's transcription endpoint caps uploads at 25MB. Longer
-  recordings would need chunking before transcription.
-- Diarization (who said what) isn't implemented — `gpt-4o-transcribe` and
-  some other ASR providers support speaker labels if that's a required
-  extension.
-
-## Demo video
-
-_Add a link here once recorded — a 2–3 minute walkthrough of: uploading a
-short recording, watching the status update through transcribing →
-summarizing → done, and reviewing the resulting minutes._
