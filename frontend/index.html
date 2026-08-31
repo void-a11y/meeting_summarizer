@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minutes — Meeting Summarizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <span class="masthead-mark">M.</span>
+    <div class="masthead-text">
+      <h1>Minutes</h1>
+      <p>Drop in the recording. Walk out with the decisions and the tasks.</p>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="panel upload-panel" id="upload-panel">
+    <div class="tape" id="dropzone">
+      <div class="tape-reel"></div>
+      <div class="tape-label">
+        <p class="tape-hint" id="tape-hint">Drop an audio file here, or click to choose one</p>
+        <p class="tape-sub">mp3 · wav · m4a · webm · mp4</p>
+      </div>
+      <div class="tape-reel"></div>
+      <input type="file" id="file-input" accept=".mp3,.mp4,.wav,.m4a,.webm,.mpeg,.mpga" hidden />
+    </div>
+    <div class="status-line" id="status-line" hidden>
+      <div class="bars"><span></span><span></span><span></span><span></span><span></span></div>
+      <span id="status-text">Uploading…</span>
+    </div>
+  </section>
+
+    <section class="panel history-panel">
+    <div class="history-head">
+      <h2 class="panel-title">Past meetings</h2>
+      <input type="text" id="history-search" class="history-search" placeholder="Search by filename…" />
+    </div>
+    <ul class="meeting-list" id="meeting-list">
+      <li class="empty-note">Nothing yet — your first upload will show up here.</li>
+    </ul>
+  </section>
+
+  <section class="panel results-panel" id="results-panel" hidden>
+        <div class="results-head">
+      <h2 id="results-filename">—</h2>
+      <div class="results-head-actions">
+        <span class="pill" id="results-status">done</span>
+        <button class="icon-btn" id="retry-btn" hidden>↻ Retry</button>
+        <button class="icon-btn danger" id="delete-btn">🗑 Delete</button>
+      </div>
+    </div>
+
+        <div class="card error-card" id="error-card" hidden>
+      <h3><span class="eyebrow">What went wrong</span></h3>
+      <p id="error-text"></p>
+      <p class="error-hint">The audio transcribed fine — this failure happened during summarization. Common causes: an invalid or expired API key, or a model name that's changed on the provider's end. Check your <code>.env</code> and the terminal running the server for more detail.</p>
+    </div>
+
+    <div class="results-grid" id="results-grid">
+      <div class="card decisions-card">
+        <h3><span class="eyebrow">Decisions</span></h3>
+        <ul id="decisions-list"></ul>
+      </div>
+      <div class="card actions-card">
+        <h3><span class="eyebrow">Action items</span></h3>
+        <ul id="actions-list"></ul>
+      </div>
+    </div>
+    
+        <div class="translate-bar">
+      <select id="translate-lang">
+        <option value="">Translate to…</option>
+        <option value="Spanish">Spanish</option>
+        <option value="French">French</option>
+        <option value="German">German</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Japanese">Japanese</option>
+        <option value="Mandarin Chinese">Mandarin Chinese</option>
+        <option value="Portuguese">Portuguese</option>
+        <option value="Arabic">Arabic</option>
+      </select>
+      <button class="icon-btn" id="translate-btn">Translate</button>
+      <button class="icon-btn" id="show-original-btn" hidden>Show original</button>
+    </div>
+    
+    <div class="card summary-card" id="summary-card">
+      <h3><span class="eyebrow">Summary</span></h3>
+      <p id="summary-text"></p>
+    </div>
+
+    <details class="transcript-details" id="transcript-details">
+      <summary>Full transcript</summary>
+      <pre id="transcript-text"></pre>
+    </details>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

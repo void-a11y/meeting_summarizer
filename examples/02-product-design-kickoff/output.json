@@ -1,0 +1,15 @@
+{
+  "summary": "The team held a kickoff meeting to launch a new remote control product, reviewing the agenda, introducing members, and outlining the project phases from functional to detailed design. They set a selling price of \u20ac25, a profit target of \u20ac50 million, a maximum production cost of \u20ac1,250 per unit, and planned to market the remote internationally in the US, Europe and Asia. The group discussed features such as multi-functionality, ergonomic shape, battery type and the need for a clear instruction booklet. Tasks were assigned for working design, technical functions design, and a user-requirements specification.",
+  "decisions": [
+    "Selling price set at 25 euro per remote",
+    "Profit aim set at 50 million euro",
+    "Maximum production cost limited to 1250 euro per remote",
+    "Product will be marketed internationally in the United States, Europe, and Asia",
+    "Remote will be multi-functional, ergonomic and include a detailed instruction booklet"
+  ],
+  "action_items": [
+    {"task": "Think about the working design", "owner": null, "due_date": null},
+    {"task": "Develop technical functions design to ensure required functionality", "owner": null, "due_date": null},
+    {"task": "Create user requirements specification", "owner": "Courtney", "due_date": null}
+  ]
+}

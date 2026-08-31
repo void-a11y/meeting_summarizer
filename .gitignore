@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+backend/meetings.db
+backend/storage/*
+!backend/storage/.gitkeep
+.venv/
+venv/
+node_modules/
+.DS_Store
