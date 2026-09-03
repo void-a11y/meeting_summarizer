@@ -1,79 +1,9 @@
-# Minutes — Meeting Summarizer
-
-Turn a meeting recording into a transcript, a plain-language summary, and a
-clean list of decisions and action items.
-
-## How it works
-
-1. **Upload** — you drop an audio file into the frontend (or `POST` it directly).
-2. **Transcribe** — the backend runs the audio through a locally-hosted
-   Whisper model (`openai-whisper` package) — free, no API key, no per-file cost.
-3. **Summarize** — the transcript is sent to an LLM on Groq's free tier
-   (`llama-3.3-70b-versatile` by default) with a prompt that returns
-   structured JSON: a summary, a list of decisions, and a list of action
-   items (task / owner / due date).
-4. **Store & serve** — everything is saved to SQLite and served back over a
-   small REST API that the frontend polls while a job is processing.
-
-This stack was chosen to run the whole pipeline for free: local Whisper
-needs no API key at all, and Groq has a generous free tier for the LLM
-call. The task brief's ASR requirement lists "Google, Azure, OpenAI
-Whisper, etc." — local Whisper is the same underlying model OpenAI's API
-wraps, just self-hosted, so it satisfies the same requirement at zero cost.
-
-## Stack
-
-- **Backend:** FastAPI + SQLAlchemy (SQLite), background tasks for async
-  processing (upload returns immediately; transcription + summarization run
-  in the background while the frontend polls for status)
-- **ASR:** local Whisper via the `openai-whisper` package (`asr.py` — swap in
-  a cloud provider like OpenAI's API, Google Speech-to-Text, or Azure Speech
-  by replacing the body of `transcribe_audio`, the return contract is just `str`)
-- **LLM:** Groq's OpenAI-compatible Chat Completions API with JSON-mode
-  output (`summarizer.py` — swap in OpenAI, Anthropic, Gemini, or a local
-  Ollama model the same way)
-- **Frontend:** plain HTML/CSS/JS, no build step, served directly by the
-  backend so the whole thing runs from one process
-
-## Project layout
-
-```
-meeting-summarizer/
-│
-├── backend/
-│   ├── main.py              # FastAPI app, routes, background job orchestration
-│   ├── asr.py               # ASR provider integration
-│   ├── summarizer.py        # LLM prompt + summary/action-item extraction
-│   ├── models.py            # SQLAlchemy Meeting table
-│   ├── schemas.py           # Pydantic response models
-│   ├── database.py          # DB session setup
-│   ├── requirements.txt
-│   └── .env.example
-│
-├── frontend/
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
-│
-├── examples/
-│   ├── 01-minimal-recording/
-│   │   ├── output.json
-│   │   └── transcript.txt
-│   │
-│   ├── 02-product-design-kickoff/
-│   │   ├── output.json
-│   │   └── transcript.txt
-│   │
-│   └── README.md
-│
-└── README.md
-```
 
 ## Setup
 
 You'll need **ffmpeg** installed and on your PATH (required by Whisper to
 read audio files):
-- Windows: https://ffmpeg.org/download.html (or `choco install ffmpeg`)
+- Windows: https://ffmpeg.org/download.html, or `winget install "FFmpeg (Essentials Build)"`
 - Mac: `brew install ffmpeg`
 - Linux: `apt install ffmpeg`
 
@@ -98,13 +28,31 @@ uvicorn main:app --reload
 Open **http://localhost:8000** — the backend serves the frontend directly,
 so there's nothing else to start.
 
+## Features
+
+- **Upload & process** — drag-and-drop audio, watch status move through
+  transcribing → summarizing → done
+- **Retry** — if a job fails (e.g. a bad API key, a renamed model), fix the
+  cause and retry in place without re-uploading the file
+- **Delete** — remove a meeting and its stored audio file
+- **Search** — the history list searches filenames *and* transcript/summary
+  content, not just titles
+- **Translate** — translate a completed meeting's summary, decisions, and
+  action items into another language on demand, with a one-click return to
+  the original
+- **Visible error messages** — a failed job shows the actual error (e.g. an
+  invalid model name) in the UI, not just a generic "Failed" status
+
 ## API
 
-| Method | Path                    | Description                                  |
-|--------|-------------------------|-----------------------------------------------|
-| POST   | `/api/meetings`         | Upload an audio file, kicks off processing    |
-| GET    | `/api/meetings`         | List all meetings with status                 |
-| GET    | `/api/meetings/{id}`    | Get full detail: transcript, summary, actions |
+| Method | Path                                    | Description                                     |
+|--------|------------------------------------------|--------------------------------------------------|
+| POST   | `/api/meetings`                          | Upload an audio file, kicks off processing        |
+| GET    | `/api/meetings?q=...`                    | List meetings, optionally searching filename/transcript/summary |
+| GET    | `/api/meetings/{id}`                     | Get full detail: transcript, summary, actions     |
+| POST   | `/api/meetings/{id}/retry`               | Re-run a failed (or any) meeting                  |
+| DELETE | `/api/meetings/{id}`                     | Delete a meeting and its stored audio             |
+| POST   | `/api/meetings/{id}/translate`           | Translate summary/decisions/actions (form field: `target_language`) |
 
 Supported audio formats: `.mp3 .mp4 .wav .m4a .webm .mpeg .mpga`
 
@@ -117,18 +65,66 @@ curl -X POST http://localhost:8000/api/meetings \
 curl http://localhost:8000/api/meetings/1
 ```
 
+Response once processing finishes:
 
+```json
+{
+  "id": 1,
+  "filename": "standup.mp3",
+  "status": "done",
+  "transcript": "...",
+  "summary": "The team agreed to ship the auth refactor by Friday...",
+  "decisions": ["Ship the auth refactor by Friday", "Use Postgres over DynamoDB"],
+  "action_items": [
+    {"task": "Write migration script", "owner": "Priya", "due_date": "Thursday"},
+    {"task": "Update API docs", "owner": null, "due_date": null}
+  ]
+}
+```
 
-## LLM prompt
+## LLM prompt design
 
 The summarization prompt (see `summarizer.py`) instructs the model to:
 
-- Only extract decisions and action items actually present in the transcript
-  (explicitly told not to invent an owner or due date if one wasn't stated)
-- Return strict JSON (enforced via OpenAI's JSON response mode) so the API
+- Only extract decisions and action items actually present in the
+  transcript — explicitly told not to invent an owner or due date if one
+  wasn't stated
+- Return strict JSON (enforced via Groq's JSON response mode) so the API
   response is reliably parseable
 - Keep the summary to 2–4 factual sentences, no filler
 
 This keeps grading/eval focused on transcript fidelity rather than the model
-"cleaning up" or embellishing what was said.
+"cleaning up" or embellishing what was said. See `/examples` for real
+output on both a near-empty test clip (verifies no hallucination) and a
+substantive real meeting (verifies correct extraction of real content).
+
+## Examples
+
+`/examples` contains real input/output pairs so summarization quality can
+be judged without running the app:
+
+- `01-minimal-recording` — a near-empty test clip. Confirms the model
+  returns empty decisions/action-items instead of inventing content when
+  the transcript doesn't support any.
+- `02-product-design-kickoff` — an ~11-minute real business meeting from
+  the AMI Meeting Corpus (CC BY 4.0). Confirms extraction of real decisions
+  (pricing, targets, constraints) and action items with correctly
+  identified owners.
+
+<!-- ## Known limitations / next steps
+
+- Processing runs in FastAPI `BackgroundTasks`, which is fine for a demo but
+  not durable — a crash mid-job loses that job. A real deployment would use
+  a task queue (Celery/RQ) or a managed job runner.
+- No auth — anyone with the URL can upload/view meetings. Fine for a local
+  demo, not for production.
+- Large files: local Whisper can handle longer files than a cloud API's
+  25MB cap, but very long recordings (an hour+) will be slow to transcribe
+  on CPU without a GPU.
+- Diarization (who said what) isn't implemented — some Whisper variants and
+  other ASR providers support speaker labels if that's a required extension.
+- Translation calls the LLM once per decision/action item plus the summary,
+  which is simple and reliable but not the most token-efficient approach
+  for very long transcripts — a single batched translation call would scale
+  better. -->
 
