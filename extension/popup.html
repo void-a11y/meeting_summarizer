@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup">
+    <h1>Minutes</h1>
+    <p class="subtitle">Record this tab's audio and get a summary.</p>
+
+    <button id="record-btn" class="record-btn">● Start Recording</button>
+    <div id="status" class="status"></div>
+
+    <div id="results" class="results" hidden>
+      <h2>Decisions</h2>
+      <ul id="decisions-list"></ul>
+      <h2>Action items</h2>
+      <ul id="actions-list"></ul>
+      <h2>Summary</h2>
+      <p id="summary-text"></p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
