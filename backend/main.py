@@ -15,7 +15,7 @@ from schemas import MeetingOut, MeetingListItem
 from asr import transcribe_audio
 from summarizer import summarize_transcript
 from translator import translate_text
-
+from typing import Optional
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 
-def process_meeting(meeting_id: int, file_path: str):
+def process_meeting(meeting_id: int, file_path: str, language: str = None):
     """Background job: transcribe, then summarize, updating status as it goes."""
     db = next(get_db())
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
@@ -42,7 +42,7 @@ def process_meeting(meeting_id: int, file_path: str):
         meeting.status = "transcribing"
         db.commit()
 
-        transcript = transcribe_audio(file_path)
+        transcript = transcribe_audio(file_path, language=language) 
         meeting.transcript = transcript
         meeting.status = "summarizing"
         db.commit()
@@ -65,6 +65,7 @@ def process_meeting(meeting_id: int, file_path: str):
 def upload_meeting(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    source_language: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     ext = Path(file.filename).suffix.lower()
@@ -84,7 +85,7 @@ def upload_meeting(
     db.commit()
     db.refresh(meeting)
 
-    background_tasks.add_task(process_meeting, meeting.id, str(dest_path))
+    background_tasks.add_task(process_meeting, meeting.id, str(dest_path), source_language)
 
     return meeting
 

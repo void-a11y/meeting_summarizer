@@ -47,6 +47,8 @@ async function uploadFile(file) {
 
   const formData = new FormData();
   formData.append("file", file);
+  const lang = document.getElementById("source-language").value;
+  if (lang) formData.append("source_language", lang);
 
   try {
     const res = await fetch(`${API_BASE}/api/meetings`, { method: "POST", body: formData });
@@ -71,9 +73,6 @@ async function pollMeeting(id) {
     statusText.textContent = STATUS_LABELS[meeting.status] || meeting.status;
 
     if (meeting.status === "done" || meeting.status === "failed") {
-      statusLine.hidden = true;
-      loadMeetingList();
-      if (meeting.status === "done") ;
       statusLine.hidden = true;
       loadMeetingList();
       renderResults(meeting);

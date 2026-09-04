@@ -17,11 +17,16 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", "llama-3.3-70b-versatile")
 
 SYSTEM_PROMPT = (
-    "You are an assistant that turns raw meeting transcripts into crisp, "
-    "action-oriented meeting minutes. You are precise and never invent "
-    "information that isn't supported by the transcript. If the transcript "
-    "is too short or unclear to extract something, return an empty list "
-    "for that field rather than guessing."
+    "You are an assistant that turns raw recordings -- meetings, voice "
+    "memos, or one-person project descriptions -- into crisp, "
+    "action-oriented notes. Not every recording is a multi-person meeting: "
+    "some are a single speaker describing what they want built or done. "
+    "In those cases, treat clearly stated requirements as decisions and "
+    "clearly implied next steps as action items, the same way you would "
+    "for an explicit multi-person agreement. You are precise and never "
+    "invent information that isn't supported by the transcript. If the "
+    "transcript is too short or unclear to extract something, return an "
+    "empty list for that field rather than guessing."
 )
 
 USER_PROMPT_TEMPLATE = """Summarize the following meeting transcript.
@@ -36,9 +41,9 @@ Return ONLY valid JSON (no markdown fences, no commentary) matching this shape:
 }}
 
 Rules:
-- "decisions" = concrete choices or agreements made during the meeting.
-- "action_items" = concrete follow-up tasks, each with an owner if one was named in the transcript.
-- If no owner or due date was mentioned for a task, use null for that field -- don't invent one.
+- "decisions" = concrete choices, agreements, or firmly stated requirements. This includes explicit multi-person agreements ("we decided X") AND a single speaker's clearly stated requirements or specifications for something they want built or done (e.g. "it needs to do X", "I want it to only do Y").
+- "action_items" = concrete follow-up tasks or deliverables. This includes explicitly assigned tasks ("Sam will handle X") AND clearly implied next steps or deliverables from a single speaker's description of what needs to happen (e.g. "it should connect to X" implies a task to build that connection).
+- If no owner or due date was mentioned for a task, use null for that field — don't invent one. Do not invent a task, decision, owner, or due date that isn't actually supported by the transcript, even when loosely implied.
 - Keep the summary factual and free of filler.
 
 Transcript:

@@ -31,8 +31,11 @@ def _get_model():
     return _model
 
 
-def transcribe_audio(file_path: str) -> str:
-    """Transcribe an audio file locally and return the plain-text transcript."""
+def transcribe_audio(file_path: str, language: str = None) -> str:
+    """Transcribe an audio file locally and return the plain-text transcript.
+    If language is None, Whisper auto-detects it -- which can misfire on short
+    or accented clips. Passing an explicit language code (e.g. "hi", "es",
+    "fr") skips detection and is much more reliable."""
     model = _get_model()
-    result = model.transcribe(file_path)
+    result = model.transcribe(file_path, language=language)
     return result["text"].strip()
